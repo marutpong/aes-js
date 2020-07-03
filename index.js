@@ -741,12 +741,59 @@
         return result;
     }
 
+
+    /** Custom Encryption */
+
+    var enc = (function() {
+
+        function encrypt(secret, plainText) {
+            if (typeof(secret) !== 'string') {
+                throw new Error('invalid secret value (must be a string)');
+            }
+    
+            if (typeof(secret) !== 'string') {
+                throw new Error('invalid plainText (must be a string)');
+            }
+
+            var keyBuffer = convertUtf8.toBytes(secret);
+            var inputBuffer = pkcs7pad(convertUtf8.toBytes(plainText));
+            
+            var escEcb = new ModeOfOperationECB(keyBuffer);
+            var encryptedBytes = escEcb.encrypt(inputBuffer);
+            
+            var encryptedData = Buffer.from(encryptedBytes).toString('base64');
+            return encryptedData
+        }
+
+        function decrypt(secret, encryptedText) {
+            if (typeof(secret) !== 'string') {
+                throw new Error('invalid secret value (must be a string)');
+            }
+    
+            if (typeof(secret) !== 'string') {
+                throw new Error('invalid encryptedText (must be a string)');
+            }
+
+            var keyBuffer = convertUtf8.toBytes(secret);
+            var escEcb = new ModeOfOperationECB(keyBuffer);
+            var buf = Buffer.from(encryptedText, 'base64');
+            var decryptedBytes = escEcb.decrypt(buf);
+            var decryptedText = convertUtf8.fromBytes(decryptedBytes);
+            return decryptedText;
+        }
+
+        return {
+            encrypt: encrypt,
+            decrypt: decrypt,
+        }
+    })();
+
     ///////////////////////
     // Exporting
 
 
     // The block cipher
-    var aesjs = {
+    var JamesAesJs = {
         AES: AES,
         Counter: Counter,
 
@@ -774,29 +821,30 @@
             coerceArray: coerceArray,
             createArray: createArray,
             copyArray: copyArray,
-        }
+        },
+        enc: enc, 
     };
 
 
     // node.js
     if (typeof exports !== 'undefined') {
-        module.exports = aesjs
+        module.exports = JamesAesJs
 
     // RequireJS/AMD
     // http://www.requirejs.org/docs/api.html
     // https://github.com/amdjs/amdjs-api/wiki/AMD
     } else if (typeof(define) === 'function' && define.amd) {
-        define([], function() { return aesjs; });
+        define([], function() { return JamesAesJs; });
 
     // Web Browsers
     } else {
 
         // If there was an existing library at "aesjs" make sure it's still available
-        if (root.aesjs) {
-            aesjs._aesjs = root.aesjs;
+        if (root.JamesAesJs) {
+            JamesAesJs._JamesAesJs = root.JamesAesJs;
         }
 
-        root.aesjs = aesjs;
+        root.JamesAesJs = JamesAesJs;
     }
 
 
